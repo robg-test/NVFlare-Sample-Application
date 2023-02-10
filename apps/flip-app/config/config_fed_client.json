@@ -6,12 +6,9 @@
   "local_rounds": 1,
   "executors": [
     {
-      "tasks": [
-        "train",
-        "submit_model"
-      ],
+      "tasks": ["train", "submit_model"],
       "executor": {
-        "path": "trainer.FLIP_TRAINER",
+        "path": "flip_trainer.RUN_TRAINER",
         "args": {
           "lr": "{lr}",
           "epochs": "{local_rounds}",
@@ -21,11 +18,9 @@
       }
     },
     {
-      "tasks": [
-        "validate"
-      ],
+      "tasks": ["validate"],
       "executor": {
-        "path": "validator.FLIP_VALIDATOR",
+        "path": "flip_validator.RUN_VALIDATOR",
         "args": {
           "project_id": "{project_id}",
           "query": "{query}"
@@ -35,9 +30,7 @@
   ],
   "task_result_filters": [
     {
-      "tasks": [
-        "train"
-      ],
+      "tasks": ["train"],
       "filters": [
         {
           "path": "nvflare.app_common.filters.exclude_vars.ExcludeVars",
@@ -56,9 +49,7 @@
   ],
   "task_data_filters": [
     {
-      "tasks": [
-        "train"
-      ],
+      "tasks": ["train"],
       "filters": [
         {
           "path": "nvflare.app_common.filters.exclude_vars.ExcludeVars",

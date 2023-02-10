@@ -50,7 +50,6 @@ class FLIP_TRAINER(Executor):
         """Cifar10 Trainer handles train and submit_model tasks. During train_task, it trains a
         simple network on CIFAR10 dataset. For submit_model task, it sends the locally trained model
         (if present) to the server.
-
         Args:
             lr (float, optional): Learning rate. Defaults to 0.01
             epochs (int, optional): Epochs. Defaults to 5
