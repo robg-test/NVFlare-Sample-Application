@@ -35,7 +35,6 @@ class FLIP_VALIDATOR(Executor):
         query=""
     ):
         """A validator that will handle a "validate" task.
-
         Args:
             validate_task_name (str, optional): Task name for validate. Defaults to "validate".
             project_id (str, optional): The ID of the project the model belongs to.

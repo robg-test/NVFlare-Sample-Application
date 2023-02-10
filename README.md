@@ -20,7 +20,7 @@
 
 # Sample FLIP Application
 
-![example workflow](https://github.com/answerconsulting/flip-sample-application/actions/workflows/nvflare-test.yml/badge.svg)
+![example workflow](https://github.com/AI4VBH/flip-sample-application/actions/workflows/nvflare-test.yml/badge.svg)
 
 
 The purpose of this repository is to provide a sample application that can be developed and tested locally before being uploaded onto FLIP.
@@ -31,13 +31,11 @@ Download or clone this repository and use the `./flip-app` directory as a sample
 
 # *Workspace Setup*
 ## **Setup NVFlare workspace with Docker 🐳** 
-
 A dockerfile has been provided that will create a container with a NVFlare Server with two clients and start them.
 Copy any NVFlare Applications you wish to use to the ``/apps`` directory, the dockerfile will copy applications in this folder
 to the transfer section of the NVFlare Admin application.
 
 ### 1. Build Image & Run Container
-
 Use the docker build commands and run the container
 
 ```shell 
@@ -46,7 +44,6 @@ docker run nvflare-in-one``
 ```
 
 ### 2. Execute & Monitor NVFlare
-
 If you exec into the container
 
 ``docker exec -it <name> bash``
@@ -61,7 +58,6 @@ _by viewing the logs of the container_
 ``docker logs <name>``
 
 ### 3. Inserting Files into the container
-
 If you wish to test the utillization of resources in your model E.g. DICOMS 
 I recommend using the copy commnd to copy the files to the container
 
@@ -77,7 +73,6 @@ Within FLIP the files are identifiable by the accession number, as returned with
 ``/dir/<accession_number>``
 
 ## Setup NVFlare Workspace without Docker 💻 
-
 Follow the [Installation](https://nvflare.readthedocs.io/en/2.0/installation.html) instructions.
 
 > ⚠️ Please ensure you install version `2.0.16`
@@ -93,7 +88,6 @@ pip install -r .\requirements.txt
 ```
 
 ### 2. Setup your FL workspace
-
 Follow the [Quickstart](https://nvflare.readthedocs.io/en/2.0/quickstart.html) instructions to set up your POC ("proof of concept") workspace.
 
 Ensure you also copy this (`./flip-app`) directory into the NVFlare examples folder.
@@ -104,7 +98,6 @@ cp -rf flip-app/* poc/admin/transfer/<APPLICATION_NAME>
 ```
 
 # Running the Sample Application flip-app
-
 The `./apps/flip-app` directory contains a replica of an application that can be run on FLIP. Some modules are stubbed with only a return type set. There are two main files that FLIP requires before running any training - `trainer.py` and `validator.py`. Both of these files you will find within `flip-app/custom` and contain a working example application that can be used as a starting point.
 This example uses [NVIDIA FLARE](https://nvidia.github.io/NVFlare) to train an image classifier using federated averaging ([FedAvg]([FedAvg](https://arxiv.org/abs/1602.05629))) and [PyTorch](https://pytorch.org/) as the deep learning training framework.
 
@@ -114,7 +107,6 @@ These two files are where you should add your own application code. The `./sampl
 
 
 ### 3. Administration Console
-
 Log into the Admin client by entering `admin` for both the username and password.
 Then, use these Admin commands to run the experiment:
 
@@ -126,7 +118,6 @@ start_app all
 ```
 
 ### 4. Shut down the server/clients
-
 To shut down the clients and server, run the following Admin commands:
 ```
 shutdown client
