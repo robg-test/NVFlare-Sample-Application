@@ -33,6 +33,7 @@ class RUN_VALIDATOR(Executor):
         self._validate_task_name = validate_task_name
         self._project_id = project_id
         self._query = query
+        self._flip_validator = None
 
     def execute(
         self,
@@ -42,13 +43,14 @@ class RUN_VALIDATOR(Executor):
         abort_signal: Signal,
     ) -> Shareable:
         try:
-            flip_trainer = UPLOADED_VALIDATOR(
-                AppConstants.TASK_VALIDATION,
-                self._project_id,
-                self._query,
-            )
+            if self._flip_validator == None:
+                self._flip_validator = UPLOADED_VALIDATOR(
+                    AppConstants.TASK_VALIDATION,
+                    self._project_id,
+                    self._query,
+                )
             
-            return flip_trainer.execute(task_name, shareable, fl_ctx, abort_signal)
+            return self._flip_validator.execute(task_name, shareable, fl_ctx, abort_signal)
         except Exception as e:
             engine = fl_ctx.get_engine()
             if engine is None:

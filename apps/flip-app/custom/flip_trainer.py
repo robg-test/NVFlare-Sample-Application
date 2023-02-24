@@ -57,6 +57,7 @@ class RUN_TRAINER(Executor):
         self._exclude_vars = exclude_vars
         self._project_id = project_id
         self._query = query
+        self._flip_trainer = None
 
     def execute(
         self,
@@ -66,17 +67,18 @@ class RUN_TRAINER(Executor):
         abort_signal: Signal,
     ) -> Shareable:
         try:
-            flip_trainer = UPLOADED_TRAINER(
-                self._lr,
-                self._epochs,
-                self._train_task_name,
-                self._submit_model_task_name,
-                self._exclude_vars,
-                self._project_id,
-                self._query,
-            )
+            if self._flip_trainer == None:
+                    self._flip_trainer = UPLOADED_TRAINER(
+                    self._lr,
+                    self._epochs,
+                    self._train_task_name,
+                    self._submit_model_task_name,
+                    self._exclude_vars,
+                    self._project_id,
+                    self._query,
+                )
             
-            return flip_trainer.execute(task_name, shareable, fl_ctx, abort_signal)
+            return self._flip_trainer.execute(task_name, shareable, fl_ctx, abort_signal)
         except Exception as e:
             engine = fl_ctx.get_engine()
             if engine is None:
