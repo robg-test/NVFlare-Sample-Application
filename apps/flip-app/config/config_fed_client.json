@@ -28,44 +28,8 @@
       }
     }
   ],
-  "task_result_filters": [
-    {
-      "tasks": ["train"],
-      "filters": [
-        {
-          "path": "nvflare.app_common.filters.exclude_vars.ExcludeVars",
-          "args": {}
-        },
-        {
-          "path": "nvflare.app_common.filters.percentile_privacy.PercentilePrivacy",
-          "args": {}
-        },
-        {
-          "path": "nvflare.app_common.filters.svt_privacy.SVTPrivacy",
-          "args": {}
-        }
-      ]
-    }
-  ],
-  "task_data_filters": [
-    {
-      "tasks": ["train"],
-      "filters": [
-        {
-          "path": "nvflare.app_common.filters.exclude_vars.ExcludeVars",
-          "args": {}
-        },
-        {
-          "path": "nvflare.app_common.filters.percentile_privacy.PercentilePrivacy",
-          "args": {}
-        },
-        {
-          "path": "nvflare.app_common.filters.svt_privacy.SVTPrivacy",
-          "args": {}
-        }
-      ]
-    }
-  ],
+  "task_result_filters": [],
+  "task_data_filters": [],
   "components": [
     {
       "id": "flip_client_event_handler",
