@@ -23,7 +23,7 @@ from nvflare.apis.fl_context import FLContext
 from nvflare.apis.shareable import Shareable
 from pandas import DataFrame
 
-from utils.flip_constants import FlipEvents, ModelStatus
+from utils.flip_constants import FlipEvents, ModelStatus, FlipConstants
 
 
 class FLIP:
@@ -58,10 +58,10 @@ class FLIP:
             return df
 
 
-    def get_by_accession_number(self, project_id: str, accession_id: str) -> Path:
-        """Calls the FLIP service to return a filepath that contains images downloaded from XNAT based
-           on the accession number
-
+    def get_by_accession_number(self, project_id: str, accession_id: str, resoure_type: str = FlipConstants.NIFTI_RESOURCE) -> Path:
+        """Calls the imaging-service to return a filepath that contains images downloaded from XNAT based
+           on the accession number. Optional resource type parameter allows for downloading only the specified
+           resource folders from XNAT.
         Returns:
             Path: path to data
         """
