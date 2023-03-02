@@ -17,6 +17,9 @@ class FlipConstants(object):
     CLEANUP: str = "cleanup"
     MIN_CLIENTS: int = 1
     INIT_TRAINING: str = "init_training"
+    NIFTI_RESOURCE: str = "NIFTI"
+    DICOM_RESOURCE: str = "DICOM"
+    ALL_RESOURCE: str = "ALL"
 
 
 class FlipEvents(object):
