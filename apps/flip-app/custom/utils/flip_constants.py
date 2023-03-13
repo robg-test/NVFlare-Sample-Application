@@ -15,6 +15,7 @@ from enum import Enum
 
 class FlipConstants(object):
     CLEANUP: str = "cleanup"
+    POST_VALIDATION: str = "post_validation"
     MIN_CLIENTS: int = 1
     INIT_TRAINING: str = "init_training"
     NIFTI_RESOURCE: str = "NIFTI"

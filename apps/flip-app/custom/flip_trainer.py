@@ -64,7 +64,7 @@ class RUN_TRAINER(Executor):
         abort_signal: Signal,
     ) -> Shareable:
         try:
-            if self._flip_trainer == None:
+            if self._flip_trainer is None:
                     self._flip_trainer = UPLOADED_TRAINER(
                     self._epochs,
                     self._train_task_name,
@@ -78,7 +78,7 @@ class RUN_TRAINER(Executor):
         except Exception as e:
             engine = fl_ctx.get_engine()
             if engine is None:
-                self.logger.error("Error: no engine in fl_ctx, cannot fire log exception event")
+                self.log_error(fl_ctx, "Error: no engine in fl_ctx, cannot fire log exception event")
                 return
 
             formatted_exception = secure_format_traceback()

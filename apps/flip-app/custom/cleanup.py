@@ -10,22 +10,43 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from nvflare.apis.fl_component import FLComponent
+import os
+import shutil
+from pathlib import Path
+
+from nvflare.apis.dxo import DXO, DataKind
+from nvflare.apis.executor import Executor
+from nvflare.apis.fl_constant import FLContextKey, EventScope, ReturnCode
 from nvflare.apis.fl_context import FLContext
+from nvflare.apis.shareable import Shareable, make_reply
+from nvflare.apis.signal import Signal
+from nvflare.security.logging import secure_format_traceback
+
+from utils.flip_constants import FlipConstants, FlipEvents
 
 
-class CleanupImages(FLComponent):
+class CleanupImages(Executor):
     def __init__(self):
-        """CleanupImages takes place as the final step of the run. All the images used for the training are
-        deleted to prevent the build-up of unnecessary files on the storage space
+        """CleanupImages takes place at the start and end of the run.
+        All the images used for the training are deleted to prevent the build-up of unnecessary
+        files on the storage space. Executing at the start of a run ensures that any training code
+        is executed with a clean slate.
+
+        Args:
+
+        Raises:
         """
 
         super().__init__()
 
-    def execute(self, fl_ctx: FLContext):
+    def execute(self, task_name: str, shareable: Shareable, fl_ctx: FLContext, abort_signal: Signal):
         try:
-            self.log_info(
-                fl_ctx, "Cleanup executed successfully, images related to the training have been deleted"
-            )
+            if task_name == FlipConstants.INIT_TRAINING or task_name == FlipConstants.POST_VALIDATION:
+                self.log_info(fl_ctx, "Cleanup executed successfully, images have been deleted")
+
+                return make_reply(ReturnCode.OK)
+
+            return make_reply(ReturnCode.TASK_UNKNOWN)
         except Exception as e:
-            self.log_exception(fl_ctx, str(e))
+
+            return make_reply(ReturnCode.EXECUTION_EXCEPTION)
