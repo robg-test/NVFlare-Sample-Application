@@ -29,7 +29,6 @@ from trainer import FLIP_TRAINER as UPLOADED_TRAINER
 class RUN_TRAINER(Executor):
     def __init__(
         self,
-        lr=0.01,
         epochs=5,
         train_task_name=AppConstants.TASK_TRAIN,
         submit_model_task_name=AppConstants.TASK_SUBMIT_MODEL,
@@ -40,7 +39,6 @@ class RUN_TRAINER(Executor):
         """Executes the uploaded trainer and handles any errors.
 
         Args:
-            lr (float, optional): Learning rate. Defaults to 0.01
             epochs (int, optional): Epochs. Defaults to 5
             train_task_name (str, optional): Task name for train task. Defaults to "train".
             submit_model_task_name (str, optional): Task name for submit model. Defaults to "submit_model".
@@ -50,7 +48,6 @@ class RUN_TRAINER(Executor):
         """
         super(RUN_TRAINER, self).__init__()
 
-        self._lr = lr
         self._epochs = epochs
         self._train_task_name = train_task_name
         self._submit_model_task_name = submit_model_task_name
@@ -69,7 +66,6 @@ class RUN_TRAINER(Executor):
         try:
             if self._flip_trainer == None:
                     self._flip_trainer = UPLOADED_TRAINER(
-                    self._lr,
                     self._epochs,
                     self._train_task_name,
                     self._submit_model_task_name,
