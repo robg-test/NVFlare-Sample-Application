@@ -58,11 +58,11 @@
   ],
   "workflows": [
     {
-      "id": "pre_training",
-      "path": "pre_training.InitTraining",
+      "id": "init_training",
+      "path": "init_training.InitTraining",
       "args": {
         "model_id": "{model_id}",
-        "task_name": "init_training"
+        "min_clients": "{min_clients}"
       }
     },
     {
@@ -83,10 +83,11 @@
     },
     {
       "id": "cross_site_validate",
-      "name": "CrossSiteModelEval",
+      "path": "cross_site_model_eval.CrossSiteModelEval",
       "args": {
         "model_locator_id": "model_locator",
-        "participating_clients": ["site-1", "site-2"]
+        "participating_clients": ["site-1", "site-2"],
+        "validation_timeout": 12000
       }
     }
   ]

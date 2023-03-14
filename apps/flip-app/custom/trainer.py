@@ -39,7 +39,6 @@ from utils.flip_constants import FlipMetricsLabel
 class FLIP_TRAINER(Executor):
     def __init__(
         self,
-        lr=0.01,
         epochs=5,
         train_task_name=AppConstants.TASK_TRAIN,
         submit_model_task_name=AppConstants.TASK_SUBMIT_MODEL,
@@ -51,7 +50,6 @@ class FLIP_TRAINER(Executor):
         simple network on CIFAR10 dataset. For submit_model task, it sends the locally trained model
         (if present) to the server.
         Args:
-            lr (float, optional): Learning rate. Defaults to 0.01
             epochs (int, optional): Epochs. Defaults to 5
             train_task_name (str, optional): Task name for train task. Defaults to "train".
             submit_model_task_name (str, optional): Task name for submit model. Defaults to "submit_model".
@@ -61,7 +59,7 @@ class FLIP_TRAINER(Executor):
         """
         super(FLIP_TRAINER, self).__init__()
 
-        self._lr = lr
+        self._lr = 0.01
         self._epochs = epochs
         self._train_task_name = train_task_name
         self._submit_model_task_name = submit_model_task_name

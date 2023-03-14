@@ -5,6 +5,13 @@
   "local_rounds": 1,
   "executors": [
     {
+      "tasks": ["init_training", "post_validation"],
+      "executor": {
+        "path": "cleanup.CleanupImages",
+        "args": {}
+      }
+    },
+    {
       "tasks": ["train", "submit_model"],
       "executor": {
         "path": "flip_trainer.RUN_TRAINER",
@@ -32,13 +39,6 @@
     {
       "id": "flip_client_event_handler",
       "path": "flip_client_event_handler.ClientEventHandler",
-      "args": {
-        "cleanup_id": "cleanup_images"
-      }
-    },
-    {
-      "id": "cleanup_images",
-      "path": "cleanup.CleanupImages",
       "args": {}
     }
   ]

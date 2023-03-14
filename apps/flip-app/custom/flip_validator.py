@@ -43,7 +43,7 @@ class RUN_VALIDATOR(Executor):
         abort_signal: Signal,
     ) -> Shareable:
         try:
-            if self._flip_validator == None:
+            if self._flip_validator is None:
                 self._flip_validator = UPLOADED_VALIDATOR(
                     AppConstants.TASK_VALIDATION,
                     self._project_id,
@@ -54,7 +54,7 @@ class RUN_VALIDATOR(Executor):
         except Exception as e:
             engine = fl_ctx.get_engine()
             if engine is None:
-                self.logger.error("Error: no engine in fl_ctx, cannot fire log exception event")
+                self.log_error(fl_ctx, "Error: no engine in fl_ctx, cannot fire log exception event")
                 return
 
             formatted_exception = secure_format_traceback()
