@@ -46,7 +46,7 @@ class ScatterAndGather(Controller):
         shareable_generator_id=AppConstants.DEFAULT_SHAREABLE_GENERATOR_ID,
         train_task_name=AppConstants.TASK_TRAIN,
         train_timeout: int = 0,
-        ignore_result_error: bool = True
+        ignore_result_error: bool = False
     ):
         """The controller for FederatedAveraging Workflow.
 
@@ -68,7 +68,7 @@ class ScatterAndGather(Controller):
             shareable_generator_id (str, optional): ID of the shareable generator. Defaults to "shareable_generator".
             train_task_name (str, optional): Name of the train task. Defaults to "train".
             train_timeout (int, optional): Time to wait for clients to do local training.
-            ignore_result_error (bool, optional): whether this controller can proceed if result has errors. Defaults to True.
+            ignore_result_error (bool, optional): whether this controller can proceed if result has errors. Defaults to False.
 
         Raises:
             TypeError: when any of input arguments does not have correct type
@@ -126,6 +126,10 @@ class ScatterAndGather(Controller):
                     "train_task_name must be a string but got {}".format(
                         type(train_task_name)
                     )
+                )
+            if not isinstance(ignore_result_error, bool): 
+                raise TypeError(
+                    "ignore_result_error must be a bool but got {}".format(type(train_task_name))
                 )
             if min_clients <= 0:
                 raise ValueError("min_clients must be greater than 0.")

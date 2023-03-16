@@ -78,7 +78,8 @@
         "shareable_generator_id": "shareable_generator",
         "train_task_name": "train",
         "train_timeout": 0,
-        "model_id": "{model_id}"
+        "model_id": "{model_id}",
+        "ignore_result_error": false
       }
     },
     {
