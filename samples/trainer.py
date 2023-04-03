@@ -58,13 +58,9 @@ class FLIP_TRAINER(Executor):
         fl_ctx: FLContext,
         abort_signal: Signal,
     ) -> Shareable:
-        try:
-            if task_name == self._train_task_name:
-                return make_reply(ReturnCode.EMPTY_RESULT)
-            elif task_name == self._submit_model_task_name:
-                return make_reply(ReturnCode.EMPTY_RESULT)
-            else:
-                return make_reply(ReturnCode.TASK_UNKNOWN)
-        except:
-            self.log_exception(fl_ctx, f"Exception in trainer.")
-            return make_reply(ReturnCode.EXECUTION_EXCEPTION)
+        if task_name == self._train_task_name:
+            return make_reply(ReturnCode.EMPTY_RESULT)
+        elif task_name == self._submit_model_task_name:
+            return make_reply(ReturnCode.EMPTY_RESULT)
+        else:
+            return make_reply(ReturnCode.TASK_UNKNOWN)
