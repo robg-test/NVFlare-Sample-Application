@@ -39,12 +39,8 @@ class PTModelLocator(ModelLocator):
     def locate_model(self, model_name, fl_ctx: FLContext) -> Union[DXO, None]:
         if model_name == PTConstants.PTServerName:
             try:
-                server_run_dir = (
-                    fl_ctx.get_engine()
-                    .get_workspace()
-                    .get_app_dir(fl_ctx.get_run_number())
-                )
-                model_path = os.path.join(server_run_dir, PTConstants.PTFileModelName)
+                server_run_dir = fl_ctx.get_engine().get_workspace().get_app_dir(fl_ctx.get_job_id())
+                model_path = os.path.join(server_run_dir, "model", PTConstants.PTFileModelName)
                 if not os.path.exists(model_path):
                     return None
 

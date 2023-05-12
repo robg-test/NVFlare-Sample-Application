@@ -42,7 +42,7 @@ class CleanupImages(Executor):
     def execute(self, task_name: str, shareable: Shareable, fl_ctx: FLContext, abort_signal: Signal):
         try:
             if task_name == FlipConstants.INIT_TRAINING or task_name == FlipConstants.POST_VALIDATION:
-                self.log_info(fl_ctx, "Cleanup executed successfully, images have been deleted")
+                self.log_info(fl_ctx, "Cleanup task received but is not executed as part of the sample app")
 
                 return make_reply(ReturnCode.OK)
 

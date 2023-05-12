@@ -25,7 +25,7 @@
     },
     {
       "id": "aggregator",
-      "path": "nvflare.app_common.aggregators.intime_accumulate_model_aggregator.InTimeAccumulateWeightedAggregator",
+      "name": "InTimeAccumulateWeightedAggregator",
       "args": {
         "expected_data_kind": "WEIGHTS"
       }
@@ -87,8 +87,9 @@
       "path": "cross_site_model_eval.CrossSiteModelEval",
       "args": {
         "model_locator_id": "model_locator",
-        "participating_clients": ["site-1", "site-2"],
-        "validation_timeout": 12000
+        "participating_clients": "{participating_clients}",
+        "validation_timeout": 12000,
+        "model_id": "{model_id}"
       }
     }
   ]

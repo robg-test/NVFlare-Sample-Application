@@ -24,24 +24,24 @@ class FlipConstants(object):
 
 
 class FlipEvents(object):
-    TRAINING_INITIATED = "_training_initiated"
-    RESULTS_UPLOAD_STARTED = "_results_upload_started"
-    RESULTS_UPLOAD_COMPLETED = "_results_upload_completed"
-    ABORTED = "_aborted"
-    SEND_RESULT = "_send_result"
+    TRAINING_INITIATED: str = "_training_initiated"
+    RESULTS_UPLOAD_STARTED: str = "_results_upload_started"
+    RESULTS_UPLOAD_COMPLETED: str = "_results_upload_completed"
+    ABORTED: str = "_aborted"
+    SEND_RESULT: str = "_send_result"
 
 
-class ModelStatus(str, Enum):
-    PENDING = "PENDING",
-    INITIATED = "INITIATED",
-    PREPARED = "PREPARED",
-    TRAINING_STARTED = "TRAINING_STARTED",
-    RESULTS_UPLOADED = "RESULTS_UPLOADED",
-    ERROR = "ERROR",
-    STOPPED = "STOPPED"
+class ModelStatus(object):
+    PENDING: str = "PENDING",
+    INITIATED: str = "INITIATED",
+    PREPARED: str = "PREPARED",
+    TRAINING_STARTED: str = "TRAINING_STARTED",
+    RESULTS_UPLOADED: str = "RESULTS_UPLOADED",
+    ERROR: str = "ERROR",
+    STOPPED: str = "STOPPED"
 
 
-class FlipMetricsLabel(str, Enum):
-    LOSS_FUNCTION = "LOSS_FUNCTION"
-    DL_RESULT = "DL_RESULT"
-    AVERAGE_SCORE = "AVERAGE_SCORE"
+class FlipMetricsLabel(object):
+    LOSS_FUNCTION: str = "LOSS_FUNCTION"
+    DL_RESULT: str = "DL_RESULT"
+    AVERAGE_SCORE: str = "AVERAGE_SCORE"

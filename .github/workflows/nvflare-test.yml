@@ -31,37 +31,22 @@ jobs:
   test:
     runs-on: ubuntu-latest
     container:
-      image: ghcr.io/answerdigital/nvflare-build-ci:2.0.18
+      image: ghcr.io/answerdigital/nvflare-build-ci:2.2.5
 
     steps:
       - uses: actions/checkout@v3
       - name: Run NVFlare and Test
         run: |
-          cp ./apps/flip-app /nvflare/poc/admin/transfer -r
-          sed -i 's/download=True/download=False/' /nvflare/poc/admin/transfer/flip-app/custom/trainer.py
-          sed -i 's/root="~\/data"/root="\/root\/data"/' /nvflare/poc/admin/transfer/flip-app/custom/trainer.py
-          sed -i 's/root="~\/data"/root="\/root\/data"/' /nvflare/poc/admin/transfer/flip-app/custom/validator.py
-          sed -i 's/self.local_train(fl_ctx, torch_weights, abort_signal)/# self.local_train(fl_ctx, torch_weights, abort_signal)/' /nvflare/poc/admin/transfer/flip-app/custom/trainer.py
-          cp ./utils/test.py /nvflare/poc/admin/test.py
-          cd /nvflare
-          ./start_nvflare_components.sh &
-          cd /nvflare/poc/admin
-          python3 /nvflare/poc/admin/test.py
-      - name: Archive Server Logs
+          yes | cp ./app/flip-app ./ -r
+          sed -i 's/download=True/download=False/' ./app/flip-app/custom/trainer.py
+          sed -i 's/root="~\/data"/root="\/root\/data"/' ./app/flip-app/custom/trainer.py
+          sed -i 's/root="~\/data"/root="\/root\/data"/' ./app/flip-app/custom/validator.py
+          sed -i 's/self.local_train(fl_ctx, torch_weights, abort_signal)/# self.local_train(fl_ctx, torch_weights, abort_signal)/' ./app/flip-app/custom/trainer.py
+          yes | cp ./utils/test.py ./
+          python3 test.py
+      - name: Archive Simulator Logs
         if: always()
         uses: actions/upload-artifact@v3
         with:
-          name: server-logs
-          path: /nvflare/poc/server/log.txt
-      - name: Archive Trust A Logs
-        if: always()
-        uses: actions/upload-artifact@v3
-        with:
-          name: site-1-logs
-          path: /nvflare/poc/site-1/log.txt
-      - name: Archive Trust B Logs
-        if: always()
-        uses: actions/upload-artifact@v3
-        with:
-          name: site-2-logs
-          path: /nvflare/poc/site-2/log.txt
+          name: simulator-logs
+          path: ./workspace-folder/simulate_job/log.txt

@@ -11,12 +11,18 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
 import traceback
+import time
+
+from nvflare.apis.event_type import EventType
+from nvflare.security.logging import secure_format_exception
+
+from flip import FLIP
+from utils.flip_constants import ModelStatus, FlipEvents
+from utils.utils import Utils
 
 from nvflare.apis.client import Client
-from nvflare.apis.event_type import EventType
-from nvflare.apis.fl_constant import ReturnCode
+from nvflare.apis.fl_constant import ReturnCode, FLContextKey
 from nvflare.apis.fl_context import FLContext
 from nvflare.apis.impl.controller import ClientTask, Controller, Task
 from nvflare.apis.shareable import Shareable
@@ -28,25 +34,32 @@ from nvflare.app_common.app_constant import AppConstants
 from nvflare.app_common.app_event_type import AppEventType
 from nvflare.widgets.info_collector import GroupInfoCollector, InfoCollector
 
-from flip import FLIP
-from utils.flip_constants import ModelStatus, FlipEvents
-from utils.utils import Utils
+
+def _check_non_neg_int(data, name: str):
+    if not isinstance(data, int):
+        raise ValueError(f"{name} must be int but got {type(data)}")
+
+    if data < 0:
+        raise ValueError(f"{name} must be greater than or equal to 0.")
 
 
 class ScatterAndGather(Controller):
     def __init__(
-        self,
-        model_id: str = "",
-        min_clients: int = 1,
-        num_rounds: int = 5,
-        start_round: int = 0,
-        wait_time_after_min_received: int = 10,
-        aggregator_id=AppConstants.DEFAULT_AGGREGATOR_ID,
-        persistor_id=AppConstants.DEFAULT_PERSISTOR_ID,
-        shareable_generator_id=AppConstants.DEFAULT_SHAREABLE_GENERATOR_ID,
-        train_task_name=AppConstants.TASK_TRAIN,
-        train_timeout: int = 0,
-        ignore_result_error: bool = False
+            self,
+            model_id: str = "",
+            min_clients: int = 1,
+            num_rounds: int = 5,
+            start_round: int = 0,
+            wait_time_after_min_received: int = 10,
+            aggregator_id=AppConstants.DEFAULT_AGGREGATOR_ID,
+            persistor_id=AppConstants.DEFAULT_PERSISTOR_ID,
+            shareable_generator_id=AppConstants.DEFAULT_SHAREABLE_GENERATOR_ID,
+            train_task_name=AppConstants.TASK_TRAIN,
+            train_timeout: int = 0,
+            ignore_result_error: bool = False,
+            fatal_error_delay: int = 5,
+            task_check_period: float = 0.5,
+            persist_every_n_rounds: int = 1
     ):
         """The controller for FederatedAveraging Workflow.
 
@@ -68,79 +81,43 @@ class ScatterAndGather(Controller):
             shareable_generator_id (str, optional): ID of the shareable generator. Defaults to "shareable_generator".
             train_task_name (str, optional): Name of the train task. Defaults to "train".
             train_timeout (int, optional): Time to wait for clients to do local training.
-            ignore_result_error (bool, optional): whether this controller can proceed if result has errors. Defaults to False.
+            ignore_result_error (bool, optional): whether this controller can proceed if result has errors. Defaults to
+                False.
+            fatal_error_delay (int, optional): Time in seconds to delay before calling 'system_panic' if a task returns
+                an error result and ignore_result_error is set to false
+            task_check_period (float, optional): interval for checking status of tasks. Defaults to 0.5.
+            persist_every_n_rounds (int, optional): persist the global model every n rounds. Defaults to 0.
+                If n is 0 then no persist.
 
         Raises:
             TypeError: when any of input arguments does not have correct type
             ValueError: when any of input arguments is out of range or are in an incorrect format
         """
-        Controller.__init__(self)
+        super().__init__(task_check_period=task_check_period)
 
         # flip
         self.flip = FLIP()
 
         # Check arguments
         try:
-            if not isinstance(min_clients, int):
-                raise TypeError(
-                    "min_clients must be int but got {}".format(type(min_clients))
-                )
-            if not isinstance(num_rounds, int):
-                raise TypeError(
-                    "num_rounds must be int but got {}".format(type(num_rounds))
-                )
-            if not isinstance(start_round, int):
-                raise TypeError(
-                    "start_round must be int but got {}".format(type(start_round))
-                )
-            if not isinstance(wait_time_after_min_received, int):
-                raise TypeError(
-                    "wait_time_after_min_received must be int but got {}".format(
-                        type(wait_time_after_min_received)
-                    )
-                )
-            if not isinstance(train_timeout, int):
-                raise TypeError(
-                    "train_timeout must be int but got {}".format(type(train_timeout))
-                )
+            _check_non_neg_int(min_clients, "min_clients")
+            _check_non_neg_int(num_rounds, "num_rounds")
+            _check_non_neg_int(start_round, "start_round")
+            _check_non_neg_int(wait_time_after_min_received, "wait_time_after_min_received")
+            _check_non_neg_int(train_timeout, "train_timeout")
+            _check_non_neg_int(persist_every_n_rounds, "persist_every_n_rounds")
+
             if not isinstance(aggregator_id, str):
-                raise TypeError(
-                    "aggregator_id must be a string but got {}".format(
-                        type(aggregator_id)
-                    )
-                )
+                raise TypeError(f"aggregator_id must be a string but got {type(aggregator_id)}")
             if not isinstance(persistor_id, str):
-                raise TypeError(
-                    "persistor_id must be a string but got {}".format(
-                        type(persistor_id)
-                    )
-                )
+                raise TypeError(f"persistor_id must be a string but got {type(persistor_id)}")
             if not isinstance(shareable_generator_id, str):
                 raise TypeError(
-                    "shareable_generator_id must be a string but got {}".format(
-                        type(shareable_generator_id)
-                    )
-                )
+                    f"shareable_generator_id must be a string but got {type(shareable_generator_id)}")
             if not isinstance(train_task_name, str):
-                raise TypeError(
-                    "train_task_name must be a string but got {}".format(
-                        type(train_task_name)
-                    )
-                )
-            if not isinstance(ignore_result_error, bool): 
-                raise TypeError(
-                    "ignore_result_error must be a bool but got {}".format(type(train_task_name))
-                )
-            if min_clients <= 0:
-                raise ValueError("min_clients must be greater than 0.")
-            if num_rounds < 0:
-                raise ValueError("num_rounds must be greater than or equal to 0.")
-            if start_round < 0:
-                raise ValueError("start_round must be greater than or equal to 0.")
-            if wait_time_after_min_received < 0:
-                raise ValueError(
-                    "wait_time_after_min_received must be greater than or equal to 0."
-                )
+                raise TypeError(f"train_task_name must be a string but got {type(train_task_name)}")
+            if not isinstance(ignore_result_error, bool):
+                raise TypeError(f"ignore_result_error must be a bool but got {type(ignore_result_error)}")
             if not Utils.is_valid_uuid(model_id):
                 raise ValueError(f"The model ID: {model_id} is not a valid UUID")
         except Exception as e:
@@ -163,7 +140,9 @@ class ScatterAndGather(Controller):
         self._wait_time_after_min_received = wait_time_after_min_received  # 5 minutes
         self._start_round = start_round
         self._train_timeout = train_timeout
-        self.ignore_result_error = ignore_result_error
+        self._ignore_result_error = ignore_result_error
+        self._fatal_error_delay = fatal_error_delay
+        self._persist_every_n_rounds = persist_every_n_rounds
 
         # workflow phases: init, train, validate
         self._phase = AppConstants.PHASE_INIT
@@ -218,12 +197,15 @@ class ScatterAndGather(Controller):
             fl_ctx.set_prop(AppConstants.NUM_ROUNDS, self._num_rounds, private=True, sticky=False)
             self.fire_event(AppEventType.TRAINING_STARTED, fl_ctx)
 
-            for self._current_round in range(self._start_round, self._start_round + self._num_rounds):
+            if self._current_round is None:
+                self._current_round = self._start_round
+            while self._current_round < self._start_round + self._num_rounds:
+
                 if self._check_abort_signal(fl_ctx, abort_signal):
                     return
 
                 self.log_info(fl_ctx, f"Round {self._current_round} started.")
-                fl_ctx.set_prop(AppConstants.GLOBAL_MODEL, self._global_weights, private=True, sticky=True)
+                fl_ctx.set_prop(AppConstants.GLOBAL_MODEL, self._global_weights, private=True, sticky=False)
                 fl_ctx.set_prop(AppConstants.CURRENT_ROUND, self._current_round, private=True, sticky=False)
                 self.fire_event(AppEventType.ROUND_STARTED, fl_ctx)
 
@@ -253,38 +235,45 @@ class ScatterAndGather(Controller):
                 if self._check_abort_signal(fl_ctx, abort_signal):
                     return
 
+                self.log_info(fl_ctx, "Start aggregation.")
                 self.fire_event(AppEventType.BEFORE_AGGREGATION, fl_ctx)
                 aggr_result = self.aggregator.aggregate(fl_ctx)
                 fl_ctx.set_prop(AppConstants.AGGREGATION_RESULT, aggr_result, private=True, sticky=False)
                 self.fire_event(AppEventType.AFTER_AGGREGATION, fl_ctx)
+                self.log_info(fl_ctx, "End aggregation.")
 
                 if self._check_abort_signal(fl_ctx, abort_signal):
                     return
 
                 self.fire_event(AppEventType.BEFORE_SHAREABLE_TO_LEARNABLE, fl_ctx)
                 self._global_weights = self.shareable_gen.shareable_to_learnable(aggr_result, fl_ctx)
-                fl_ctx.set_prop(AppConstants.GLOBAL_MODEL, self._global_weights, private=True, sticky=True)
+                fl_ctx.set_prop(AppConstants.GLOBAL_MODEL, self._global_weights, private=True, sticky=False)
                 fl_ctx.sync_sticky()
                 self.fire_event(AppEventType.AFTER_SHAREABLE_TO_LEARNABLE, fl_ctx)
 
                 if self._check_abort_signal(fl_ctx, abort_signal):
                     return
 
-                self.fire_event(AppEventType.BEFORE_LEARNABLE_PERSIST, fl_ctx)
-                self.persistor.save(self._global_weights, fl_ctx)
-                self.fire_event(AppEventType.AFTER_LEARNABLE_PERSIST, fl_ctx)
+                if (
+                        self._persist_every_n_rounds != 0 and (
+                        self._current_round + 1) % self._persist_every_n_rounds == 0
+                ) or self._current_round == self._start_round + self._num_rounds - 1:
+                    self.log_info(fl_ctx, "Start persist model on server.")
+                    self.fire_event(AppEventType.BEFORE_LEARNABLE_PERSIST, fl_ctx)
+                    self.persistor.save(self._global_weights, fl_ctx)
+                    self.fire_event(AppEventType.AFTER_LEARNABLE_PERSIST, fl_ctx)
+                    self.log_info(fl_ctx, "End persist model on server.")
 
                 self.fire_event(AppEventType.ROUND_DONE, fl_ctx)
                 self.log_info(fl_ctx, f"Round {self._current_round} finished.")
+                self._current_round += 1
 
             self._phase = AppConstants.PHASE_FINISHED
             self.log_info(fl_ctx, "Finished ScatterAndGather Training.")
-            self.fire_event(AppEventType.TRAINING_FINISHED, fl_ctx)
         except BaseException as e:
-            traceback.print_exc()
-            error_msg = f"Exception in ScatterAndGather control_flow: {e}"
+            error_msg = f"Exception in ScatterAndGather control_flow: {secure_format_exception(e)}"
             self.log_exception(fl_ctx, error_msg)
-            self.system_panic(str(e), fl_ctx)
+            self.system_panic(error_msg, fl_ctx)
 
     def stop_controller(self, fl_ctx: FLContext) -> None:
         self._phase = AppConstants.PHASE_FINISHED
@@ -304,6 +293,15 @@ class ScatterAndGather(Controller):
                     info={"phase": self._phase, "current_round": self._current_round, "num_rounds": self._num_rounds},
                 )
 
+        if event_type == FlipEvents.SEND_RESULT:
+            self.log_info(fl_ctx, "Attempting to handle metrics event")
+            event_data = fl_ctx.get_prop(FLContextKey.EVENT_DATA, None)
+            if event_data is None:
+                self.log_error(fl_ctx, "Metrics Error: metrics result event was fired but no data found")
+                return
+
+            self.flip.handle_metrics_event(event_data, self._current_round, self.model_id)
+
     def _prepare_train_task_data(self, client_task: ClientTask, fl_ctx: FLContext) -> None:
         fl_ctx.set_prop(AppConstants.TRAIN_SHAREABLE, client_task.task.data, private=True, sticky=False)
         self.fire_event(AppEventType.BEFORE_TRAIN_TASK, fl_ctx)
@@ -318,7 +316,7 @@ class ScatterAndGather(Controller):
         client_task.result = None
 
     def process_result_of_unknown_task(
-        self, client: Client, task_name, client_task_id, result: Shareable, fl_ctx: FLContext
+            self, client: Client, task_name, client_task_id, result: Shareable, fl_ctx: FLContext
     ) -> None:
         if self._phase == AppConstants.PHASE_TRAIN and task_name == self.train_task_name:
             self._accept_train_result(client_name=client.name, result=result, fl_ctx=fl_ctx)
@@ -334,7 +332,7 @@ class ScatterAndGather(Controller):
 
         # Raise errors if bad peer context or execution exception.
         if rc and rc != ReturnCode.OK:
-            if self.ignore_result_error:
+            if self._ignore_result_error:
                 self.log_error(fl_ctx, f"Ignore the client train result. Train result error code: {rc}")
                 return False
             else:
@@ -342,6 +340,16 @@ class ScatterAndGather(Controller):
                     self.system_panic("Peer context is bad or missing. ScatterAndGather exiting.", fl_ctx=fl_ctx)
                     return False
                 elif rc in [ReturnCode.EXECUTION_EXCEPTION, ReturnCode.TASK_UNKNOWN]:
+                    formatted_exception = result.get_header("exception")
+
+                    if formatted_exception is not None:
+                        self.log_error(fl_ctx, formatted_exception)
+                        self.flip.send_handled_exception(
+                            formatted_exception=formatted_exception,
+                            client_name=client_name,
+                            model_id=self.model_id
+                        )
+
                     self.system_panic(
                         "Execution Exception in client training. ScatterAndGather exiting.", fl_ctx=fl_ctx
                     )
@@ -375,3 +383,20 @@ class ScatterAndGather(Controller):
             self.fire_event(FlipEvents.ABORTED, fl_ctx)
             return True
         return False
+
+    def get_persist_state(self, fl_ctx: FLContext) -> dict:
+        return {
+            "current_round": self._current_round,
+            "start_round": self._start_round,
+            "num_rounds": self._num_rounds,
+            "global_weights": self._global_weights,
+        }
+
+    def restore(self, state_data: dict, fl_ctx: FLContext):
+        try:
+            self._current_round = state_data.get("current_round")
+            self._start_round = state_data.get("start_round")
+            self._num_rounds = state_data.get("num_rounds")
+            self._global_weights = state_data.get("global_weights")
+        finally:
+            pass

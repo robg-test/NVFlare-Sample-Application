@@ -62,11 +62,10 @@ class PersistToS3AndCleanup(FLComponent):
 
     def execute(self, fl_ctx: FLContext):
         try:
-            self.log_info(fl_ctx, "Initializing PersistToS3AndCleanup")
-
-            self.log_info(fl_ctx, "Beginning PersistToS3AndCleanup")
-
-            self.log_info(fl_ctx, "PersistToS3AndCleanup completed")
+            self.log_info(
+                fl_ctx,
+                "Call to Persist and cleanup successfully received but not executed as part of the FLIP sample app"
+            )
 
         except BaseException as e:
             traceback.print_exc()

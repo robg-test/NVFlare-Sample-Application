@@ -8,19 +8,15 @@ RUN pip install -r ./requirements.txt
 
 RUN python3 -c "import torchvision;torchvision.datasets.CIFAR10(root='/root/data/', download=True)"
 
-WORKDIR /nvflare/
-RUN yes | poc -n 2 \
-  && mkdir -p poc/admin/transfer
+WORKDIR /nvflare
 
-COPY ./apps/ /nvflare/poc/admin/transfer/
-COPY ./utils/test.py /nvflare/poc/admin/
-
-COPY ./utils/start_nvflare_components.sh /nvflare/
+COPY ./app /nvflare/app/
+COPY ./utils/test.py /nvflare/
+COPY ./utils/start_nvflare_simulator.sh /nvflare/
 
 # Fix the Docker issue with line endings from .sh files when running it on Windows
 # from https://github.com/docker/for-win/issues/1340
-RUN dos2unix /nvflare/start_nvflare_components.sh
-RUN chmod 777 /nvflare/start_nvflare_components.sh
+RUN dos2unix /nvflare/start_nvflare_simulator.sh
+RUN chmod 777 /nvflare/start_nvflare_simulator.sh
 
-ENV PATH="${PATH}:/nvflare/poc/admin/startup"
-CMD ["./start_nvflare_components.sh"]
+ENV PATH="${PATH}:/nvflare/"

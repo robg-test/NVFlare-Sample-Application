@@ -52,28 +52,6 @@ class RUN_VALIDATOR(Executor):
             
             return self._flip_validator.execute(task_name, shareable, fl_ctx, abort_signal)
         except Exception as e:
-            engine = fl_ctx.get_engine()
-            if engine is None:
-                self.log_error(fl_ctx, "Error: no engine in fl_ctx, cannot fire log exception event")
-                return
-
             formatted_exception = secure_format_traceback()
 
-            dxo = DXO(data_kind=DataKind.ANALYTIC, data={"exception": formatted_exception})
-            event_data = dxo.to_shareable()
-            
-            fl_ctx.set_prop(FLContextKey.EVENT_DATA, event_data, private=True, sticky=False)
-
-            fl_ctx.set_prop(
-                FLContextKey.EVENT_SCOPE,
-                value=EventScope.FEDERATION,
-                private=True,
-                sticky=False,
-            )
-
-            fl_ctx.set_prop(
-                FLContextKey.EVENT_ORIGIN, "flip_client", private=True, sticky=False
-            )
-
-            engine.fire_event(FlipEvents.LOG_EXCEPTION, fl_ctx)
-            return make_reply(ReturnCode.EXECUTION_EXCEPTION)
+            return make_reply(ReturnCode.EXECUTION_EXCEPTION, headers={"exception": formatted_exception})

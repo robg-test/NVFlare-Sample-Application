@@ -12,7 +12,6 @@
 
 import logging
 import json
-import ast
 import os.path
 from pathlib import Path
 from typing import List
@@ -57,8 +56,8 @@ class FLIP:
 
             return df
 
-
-    def get_by_accession_number(self, project_id: str, accession_id: str, resoure_type: str = FlipConstants.NIFTI_RESOURCE) -> Path:
+    def get_by_accession_number(self, project_id: str, accession_id: str,
+                                resource_type: str = FlipConstants.NIFTI_RESOURCE) -> Path:
         """Calls the imaging-service to return a filepath that contains images downloaded from XNAT based
            on the accession number. Optional resource type parameter allows for downloading only the specified
            resource folders from XNAT.
@@ -78,10 +77,10 @@ class FLIP:
         """Raises a federated event containing the passed in metrics data (label, value)
         """
         if not isinstance(label, str):
-            raise TypeError("Expect label to be string, but got {}".format(type(label)))
+            raise TypeError(f"Expect label to be string, but got {type(label)}")
 
         if not isinstance(fl_ctx, FLContext):
-            raise TypeError("Expect fl_ctx to be FLContext, but got {}".format(type(fl_ctx)))
+            raise TypeError(f"Expect fl_ctx to be FLContext, but got {type(fl_ctx)}")
 
         engine = fl_ctx.get_engine()
         if engine is None:
@@ -105,5 +104,9 @@ class FLIP:
         self.logger.info("Successfully fired metrics event")
 
     def handle_metrics_event(self, event_data: Shareable, global_round: int, model_id: str):
+        """INTENDED FOR INTERNAL USE ONLY. NOT TO BE CALLED BY THE TRAINER.
+        """
+
+    def send_handled_exception(self, formatted_exception: str, client_name: str, model_id: str):
         """INTENDED FOR INTERNAL USE ONLY. NOT TO BE CALLED BY THE TRAINER.
         """

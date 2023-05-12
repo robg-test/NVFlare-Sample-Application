@@ -27,13 +27,20 @@ The purpose of this repository is to provide a sample application that can be de
 ## **How to use this repository**
 
 This repository contains a simplified sample application that replicates a running application on FLIP. This application runs on [NVIDIA Flare](https://github.com/NVIDIA/NVFlare).
-Download or clone this repository and use the `./flip-app` directory as a sample application to run in NVIDIA Flare.
+Download or clone this repository and use the `./app` directory as a sample application to run in NVIDIA Flare.
 
-# *Workspace Setup*
-## **Setup NVFlare workspace with Docker 🐳** 
-A dockerfile has been provided that will create a container with a NVFlare Server with two clients and start them.
-Copy any NVFlare Applications you wish to use to the ``/apps`` directory, the dockerfile will copy applications in this folder
-to the transfer section of the NVFlare Admin application.
+## Setup NVFlare Workspace without Docker 💻 
+Follow the nvflare [Installation](https://nvflare.readthedocs.io/en/2.0/installation.html) instructions.
+
+Install the required dependencies from `requirements.txt`
+
+``python3 -m pip install -r requirements.txt``
+
+## Setup NVFlare workspace with Docker 🐳 
+A dockerfile has been provided that contains all the required dependencies installed.
+
+Copy any NVFlare Applications you wish to use to the ``/apps`` directory. The nvflare fl-simulator can then be used in 
+the same manner described above.
 
 ### 1. Build Image & Run Container
 Use the docker build commands and run the container
@@ -43,23 +50,9 @@ docker build . -t nvflare-in-one``
 docker run nvflare-in-one``
 ```
 
-### 2. Execute & Monitor NVFlare
-If you exec into the container
-
-``docker exec -it <name> bash``
-
-You will be able to run ``fl-admin.sh``
-The username and password for this container are ``admin``
-This will grant you access to all the NVFlare Admin commands.
-
-The logs for the model execution are written to STDOUT and can be accessible
-_by viewing the logs of the container_
-
-``docker logs <name>``
-
-### 3. Inserting Files into the container
-If you wish to test the utillization of resources in your model E.g. DICOMS 
-I recommend using the copy commnd to copy the files to the container
+### 2. Inserting Files into the container
+If you wish to test the utilization of resources in your model E.g. DICOMS 
+It's recommended to use the copy command to copy the files to the container
 
 ```
 docker cp <path_to_your_resource> <container_name>:/dir
@@ -72,59 +65,39 @@ Within FLIP the files are identifiable by the accession number, as returned with
 
 ``/dir/<accession_number>``
 
-## Setup NVFlare Workspace without Docker 💻 
-Follow the [Installation](https://nvflare.readthedocs.io/en/2.0/installation.html) instructions.
-
-> ⚠️ Please ensure you install version `2.0.16`
-
-> Requires specific protobuf version [NVFlare GitHub Issue](https://github.com/NVIDIA/NVFlare/issues/608)
-
-Install requirements:
-
-All the requirements of NVFlare as well as additional packages used by FLIP have been provided in a requirements.txt file.
-
-```bash
-pip install -r .\requirements.txt
-```
-
-### 2. Setup your FL workspace
-Follow the [Quickstart](https://nvflare.readthedocs.io/en/2.0/quickstart.html) instructions to set up your POC ("proof of concept") workspace.
-
-Ensure you also copy this (`./flip-app`) directory into the NVFlare examples folder.
-
-```bash
-mkdir poc/admin/transfer/<APPLICATION_NAME>
-cp -rf flip-app/* poc/admin/transfer/<APPLICATION_NAME>
-```
-
 # Running the Sample Application flip-app
-The `./apps/flip-app` directory contains a replica of an application that can be run on FLIP. Some modules are stubbed with only a return type set. There are two main files that FLIP requires before running any training - `trainer.py` and `validator.py`. Both of these files you will find within `flip-app/custom` and contain a working example application that can be used as a starting point.
+The `./apps/flip-app` directory contains a replica of an application that can be run on FLIP. Some modules are stubbed with only a return type set. There are two main files that FLIP requires before running any training - `trainer.py` and `validator.py`. Both of these files you will find within `flip-app/app/custom` and contain a working example application that can be used as a starting point.
 This example uses [NVIDIA FLARE](https://nvidia.github.io/NVFlare) to train an image classifier using federated averaging ([FedAvg]([FedAvg](https://arxiv.org/abs/1602.05629))) and [PyTorch](https://pytorch.org/) as the deep learning training framework.
 
 > **_NOTE:_** This example uses the [CIFAR-10](https://www.cs.toronto.edu/~kriz/cifar.html) dataset and will load its data within the trainer code.
 
 These two files are where you should add your own application code. The `./samples` directory contains empty templates of both `trainer.py` and `validator.py`.
 
+### Run the fl-simulator
 
-### 3. Administration Console
-Log into the Admin client by entering `admin` for both the username and password.
-Then, use these Admin commands to run the experiment:
+``nvflare simulator ./app -w ./workspace-folder -n 2 -t 2``
 
-```bash
-upload_app <APPLICATION_NAME>
-set_run_number 1
-deploy_app <APPLICATION_NAME> all
-start_app all
+If running from a docker container then you'll need to exec into that container first.
+
+```shell 
+docker exec -it <name> bash``
+nvflare simulator ./app -w ./workspace-folder -n 2 -t ``
 ```
 
-### 4. Shut down the server/clients
-To shut down the clients and server, run the following Admin commands:
-```
-shutdown client
-shutdown server
-```
+Assuming the `./app` directory is set up in the same way as the sample app repository. The fl-simulator will create a local
+nvflare server with two clients and then proceed to run the sample application. Changes can be quickly tested by using
+this command. Simply update the parts of the sample app you wish to change and run the same command. (The app will need
+to be copied back into the docker container if running from docker)
 
-> **_NOTE:_** For more information about the Admin client, see [here](https://nvflare.readthedocs.io/en/2.0/user_guide/admin_commands.html).
+### Output
+The output of training can be found within the designated workspace folder passed in through the `-w` argument. The
+simulator will create this directory for you if it doesn't exist.
+
+This directory will contain the trained server and local models along with the cross validation results and log file
+
+### Using GPUs
+The fl-simulator command is setup to run on cpu but can be configured to use gpus if available. See more information in the nvflare documentation
+[FL-Simulator 2.2 docs](https://nvflare.readthedocs.io/en/2.2/getting_started.html#the-fl-simulator)
 
 ## **FLIP methods**
 The following methods are available to be used in training, located in `flip.py`:
@@ -167,6 +140,8 @@ The following methods are available to be used in training, located in `flip.py`
   Some constant values are provided under `FlipMetricsLabel` in `utils/flip_constants` but is not required to use these
 
 - `handle_metrics_event(self, event_data: Shareable, global_round: int, model_id: str)`
+  This method is for internal use only and is not to be called by the trainer.
+- `send_handled_exception(self, formatted_exception: str, client_name: str, model_id: str)`
   This method is for internal use only and is not to be called by the trainer.
 
 ### Import FLIP and call methods

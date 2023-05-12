@@ -15,6 +15,7 @@
 import os
 import shutil
 import time
+
 from typing import Union
 
 from nvflare.apis.client import Client
@@ -34,6 +35,8 @@ from nvflare.security.logging import secure_format_exception
 from nvflare.widgets.info_collector import GroupInfoCollector, InfoCollector
 
 from utils.flip_constants import FlipConstants
+from utils.utils import Utils
+from flip import FLIP
 
 
 class CrossSiteModelEval(Controller):
@@ -50,7 +53,9 @@ class CrossSiteModelEval(Controller):
         cleanup_models=False,
         participating_clients=None,
         wait_for_clients_timeout=300,
-        cleanup_timeout=600
+        cleanup_timeout=600,
+        fatal_error_delay=5,
+        model_id=""
     ):
         """Cross Site Model Validation workflow.
 
@@ -65,12 +70,18 @@ class CrossSiteModelEval(Controller):
             formatter_id (str, optional): ID for formatter component. Defaults to "".
             submit_model_task_name (str, optional): Name of submit_model task. Defaults to "".
             validation_task_name (str, optional): Name of validate_model task. Defaults to "validate".
-            cleanup_models (bool, optional): Whether or not models should be deleted after run. Defaults to False.
+            cleanup_models (bool, optional): Whether models should be deleted after run. Defaults to False.
             participating_clients (list, optional): List of participating client names. If not provided, defaults
                 to all clients connected at start of controller.
             wait_for_clients_timeout (int, optional): Timeout for clients to appear. Defaults to 300 secs
+            fatal_error_delay (int, optional): Time in seconds to delay before calling 'system_panic'
+                if a task returns an error result and ignore_result_error is set to false
+            model_id (str, required): ID of the model that the training is being performed under.
         """
         super(CrossSiteModelEval, self).__init__(task_check_period=task_check_period)
+
+        # flip
+        self.flip = FLIP()
 
         if not isinstance(task_check_period, float):
             raise TypeError("task_check_period must be float but got {}".format(type(task_check_period)))
@@ -90,6 +101,8 @@ class CrossSiteModelEval(Controller):
             raise TypeError("validation_task_name must be a string but got {}".format(type(validation_task_name)))
         if not isinstance(cleanup_models, bool):
             raise TypeError("cleanup_models must be bool but got {}".format(type(cleanup_models)))
+        if not Utils.is_valid_uuid(model_id):
+            raise ValueError(f"The model ID: {model_id} is not a valid UUID")
 
         if participating_clients:
             if not isinstance(participating_clients, list):
@@ -126,6 +139,8 @@ class CrossSiteModelEval(Controller):
         self._cross_val_results_dir = None
         self._model_locator = None
         self._cleanup_timeout = cleanup_timeout
+        self._fatal_error_delay = fatal_error_delay
+        self._model_id = model_id
 
     def start_controller(self, fl_ctx: FLContext):
         engine = fl_ctx.get_engine()
@@ -140,7 +155,7 @@ class CrossSiteModelEval(Controller):
 
         # Create shareable dirs for models and results
         workspace: Workspace = engine.get_workspace()
-        run_dir = workspace.get_run_dir(fl_ctx.get_run_number())
+        run_dir = workspace.get_run_dir(fl_ctx.get_job_id())
         cross_val_path = os.path.join(run_dir, self._cross_val_dir)
         self._cross_val_models_dir = os.path.join(cross_val_path, AppConstants.CROSS_VAL_MODEL_DIR_NAME)
         self._cross_val_results_dir = os.path.join(cross_val_path, AppConstants.CROSS_VAL_RESULTS_DIR_NAME)
@@ -374,10 +389,21 @@ class CrossSiteModelEval(Controller):
         # get return code
         rc = result.get_return_code()
         if rc and rc != ReturnCode.OK:
+            time.sleep(self._fatal_error_delay)
             # Raise errors if bad peer context or execution exception.
             if rc in [ReturnCode.MISSING_PEER_CONTEXT, ReturnCode.BAD_PEER_CONTEXT]:
                 self.log_error(fl_ctx, "Peer context is bad or missing. No model submitted for this client.")
             elif rc in [ReturnCode.EXECUTION_EXCEPTION, ReturnCode.TASK_UNKNOWN]:
+                formatted_exception = result.get_header("exception")
+
+                if formatted_exception is not None:
+                    self.log_error(fl_ctx, formatted_exception)
+                    self.flip.send_handled_exception(
+                        formatted_exception=formatted_exception,
+                        client_name=client_name,
+                        model_id=self._model_id
+                    )
+
                 self.log_error(
                     fl_ctx, "Execution Exception on client during model submission. No model submitted for this client."
                 )
@@ -448,6 +474,16 @@ class CrossSiteModelEval(Controller):
             if rc in [ReturnCode.MISSING_PEER_CONTEXT, ReturnCode.BAD_PEER_CONTEXT]:
                 self.log_error(fl_ctx, "Peer context is bad or missing.")
             elif rc in [ReturnCode.EXECUTION_EXCEPTION, ReturnCode.TASK_UNKNOWN]:
+                formatted_exception = result.get_header("exception")
+
+                if formatted_exception is not None:
+                    self.log_error(fl_ctx, formatted_exception)
+                    self.flip.send_handled_exception(
+                        formatted_exception=formatted_exception,
+                        client_name=client_name,
+                        model_id=self._model_id
+                    )
+
                 self.log_error(fl_ctx, "Execution Exception in model validation.")
             elif rc in [
                 ReturnCode.EXECUTION_RESULT_ERROR,

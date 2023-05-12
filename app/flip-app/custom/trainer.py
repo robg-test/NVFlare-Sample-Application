@@ -138,7 +138,6 @@ class FLIP_TRAINER(Executor):
         abort_signal: Signal,
     ) -> Shareable:
         if task_name == self._train_task_name:
-            dataframe = self.flip.get_dataframe(self.project_id, self.query)
             self.flip.send_metrics_value(FlipMetricsLabel.LOSS_FUNCTION, 3000.0, fl_ctx)
 
             # Get model weights
@@ -188,7 +187,7 @@ class FLIP_TRAINER(Executor):
         run_dir = (
             fl_ctx.get_engine()
             .get_workspace()
-            .get_run_dir(fl_ctx.get_prop(ReservedKey.RUN_NUM))
+            .get_run_dir(fl_ctx.get_job_id())
         )
         models_dir = os.path.join(run_dir, PTConstants.PTModelsDir)
         if not os.path.exists(models_dir):
@@ -203,7 +202,7 @@ class FLIP_TRAINER(Executor):
         run_dir = (
             fl_ctx.get_engine()
             .get_workspace()
-            .get_run_dir(fl_ctx.get_prop(ReservedKey.RUN_NUM))
+            .get_run_dir(fl_ctx.get_job_id())
         )
         models_dir = os.path.join(run_dir, PTConstants.PTModelsDir)
         if not os.path.exists(models_dir):

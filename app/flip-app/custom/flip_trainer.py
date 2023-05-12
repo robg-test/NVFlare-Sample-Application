@@ -28,13 +28,13 @@ from trainer import FLIP_TRAINER as UPLOADED_TRAINER
 
 class RUN_TRAINER(Executor):
     def __init__(
-        self,
-        epochs=5,
-        train_task_name=AppConstants.TASK_TRAIN,
-        submit_model_task_name=AppConstants.TASK_SUBMIT_MODEL,
-        exclude_vars=None,
-        project_id="",
-        query="",
+            self,
+            epochs=5,
+            train_task_name=AppConstants.TASK_TRAIN,
+            submit_model_task_name=AppConstants.TASK_SUBMIT_MODEL,
+            exclude_vars=None,
+            project_id="",
+            query="",
     ):
         """Executes the uploaded trainer and handles any errors.
 
@@ -57,15 +57,15 @@ class RUN_TRAINER(Executor):
         self._flip_trainer = None
 
     def execute(
-        self,
-        task_name: str,
-        shareable: Shareable,
-        fl_ctx: FLContext,
-        abort_signal: Signal,
+            self,
+            task_name: str,
+            shareable: Shareable,
+            fl_ctx: FLContext,
+            abort_signal: Signal,
     ) -> Shareable:
         try:
             if self._flip_trainer is None:
-                    self._flip_trainer = UPLOADED_TRAINER(
+                self._flip_trainer = UPLOADED_TRAINER(
                     self._epochs,
                     self._train_task_name,
                     self._submit_model_task_name,
@@ -73,31 +73,9 @@ class RUN_TRAINER(Executor):
                     self._project_id,
                     self._query,
                 )
-            
+
             return self._flip_trainer.execute(task_name, shareable, fl_ctx, abort_signal)
         except Exception as e:
-            engine = fl_ctx.get_engine()
-            if engine is None:
-                self.log_error(fl_ctx, "Error: no engine in fl_ctx, cannot fire log exception event")
-                return
-
             formatted_exception = secure_format_traceback()
 
-            dxo = DXO(data_kind=DataKind.ANALYTIC, data={"exception": formatted_exception})
-            event_data = dxo.to_shareable()
-
-            fl_ctx.set_prop(FLContextKey.EVENT_DATA, event_data, private=True, sticky=False)
-
-            fl_ctx.set_prop(
-                FLContextKey.EVENT_SCOPE,
-                value=EventScope.FEDERATION,
-                private=True,
-                sticky=False,
-            )
-
-            fl_ctx.set_prop(
-                FLContextKey.EVENT_ORIGIN, "flip_client", private=True, sticky=False
-            )
-
-            engine.fire_event(FlipEvents.LOG_EXCEPTION, fl_ctx)
-            return make_reply(ReturnCode.EXECUTION_EXCEPTION)
+            return make_reply(ReturnCode.EXECUTION_EXCEPTION, headers={"exception": formatted_exception})

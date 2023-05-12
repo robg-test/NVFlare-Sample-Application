@@ -1,0 +1,10 @@
+{
+  "name": "FLIP",
+  "resource_spec": {},
+  "min_clients" : 2,
+  "deploy_map": {
+    "flip-app": [
+      "@ALL"
+    ]
+  }
+}
