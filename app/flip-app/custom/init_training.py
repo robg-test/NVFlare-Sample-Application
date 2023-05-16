@@ -14,10 +14,12 @@
 
 import traceback
 
+from nvflare.apis.fl_constant import ReturnCode
+
 from flip import FLIP
 
 from nvflare.apis.client import Client
-from nvflare.apis.controller_spec import Task
+from nvflare.apis.controller_spec import Task, ClientTask
 from nvflare.apis.fl_context import FLContext
 from nvflare.apis.impl.controller import Controller
 from nvflare.apis.shareable import Shareable
@@ -92,7 +94,8 @@ class InitTraining(Controller):
             cleanup_task = Task(
                 name=FlipConstants.INIT_TRAINING,
                 data=Shareable(),
-                timeout=self._cleanup_timeout
+                timeout=self._cleanup_timeout,
+                result_received_cb=self._process_cleanup_result
             )
 
             self.broadcast_and_wait(
@@ -138,3 +141,33 @@ class InitTraining(Controller):
             self.fire_event(FlipEvents.ABORTED, fl_ctx)
             return True
         return False
+
+    def _process_cleanup_result(self, client_task: ClientTask, fl_ctx: FLContext):
+        result = client_task.result
+        client_name = client_task.client.name
+
+        self._accept_cleanup_result(client_name=client_name, result=result, fl_ctx=fl_ctx)
+
+        client_task.result = None
+
+    def _accept_cleanup_result(self, client_name: str, result: Shareable, fl_ctx: FLContext):
+        rc = result.get_return_code()
+
+        if rc and rc == ReturnCode.OK:
+            return
+
+        if rc in [ReturnCode.EXECUTION_EXCEPTION, ReturnCode.TASK_UNKNOWN]:
+            formatted_exception = result.get_header("exception")
+
+            if formatted_exception is not None:
+                self.log_error(fl_ctx, formatted_exception)
+                self.flip.send_handled_exception(
+                    formatted_exception=formatted_exception,
+                    client_name=client_name,
+                    model_id=self._model_id
+                )
+
+            self.system_panic(
+                "Execution Exception initiating client training. InitTraining exiting.", fl_ctx=fl_ctx
+            )
+            return False
